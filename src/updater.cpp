@@ -159,7 +159,7 @@ void inspect_blob(const std::string& blob_path) {
 
     std::cout << "\n--- CURRENT BLOB CONTENTS (Total Size: " << sb.st_size << " B) ---" << std::endl;
     uint64_t offset = 0;
-    while (offset < sb.st_size) {
+    while (offset < static_cast<uint64_t>(sb.st_size)){
         const AssetHeader* hdr = reinterpret_cast<const AssetHeader*>(map + offset);
         if (!hdr->is_valid()) {
             std::cerr << "[CORRUPTION] Invalid header at offset " << offset << "!" << std::endl;
@@ -175,6 +175,7 @@ void inspect_blob(const std::string& blob_path) {
     close(fd);
 }
 
+/*
 // ============================================================================
 // Main
 // ============================================================================
@@ -218,3 +219,4 @@ int main() {
 
     return 0;
 }
+*/

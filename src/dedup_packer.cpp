@@ -163,7 +163,7 @@ void pack_with_deduplication(const std::vector<std::string>& file_paths,
     std::cout << "Manifest exported to: " << manifest_output_path << std::endl;
     std::cout << "==========================================\n" << std::endl;
 }
-
+/*
 // ============================================================================
 // Main Execution
 // ============================================================================
@@ -182,3 +182,5 @@ int main() {
 
     return 0;
 }
+
+*/

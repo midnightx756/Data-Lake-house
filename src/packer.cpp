@@ -114,6 +114,7 @@ void unpack_blob(const std::string& blob_path) {
     blob.close();
 }
 
+/*
 // ============================================================================
 // Main Execution
 // ============================================================================
@@ -139,3 +140,4 @@ int main() {
 
 
 // HINT: blob.read(payload.data(), header.payload_size);
+*/
