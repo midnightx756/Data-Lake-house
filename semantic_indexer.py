@@ -1,4 +1,3 @@
-#Document #1: Alpha version dataset specifications.
 
 import os
 import csv
@@ -80,7 +79,7 @@ def index_dataset(manifest_csv, assets_dir, db_path=DB_NAME):
 
             # Insert into SQLite
             cursor.execute("""
-                INSERT OR REPLACE INTO assets 
+                INSERT OR REPLACE INTO assets
                 (asset_id, original_name, content_hash, byte_offset, payload_size, is_duplicate, embedding)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (asset_id, name, content_hash, offset, size, is_dup, embedding_blob))
@@ -97,33 +96,33 @@ def index_dataset(manifest_csv, assets_dir, db_path=DB_NAME):
 def search_by_text(query_text, db_path=DB_NAME, top_k=5):
     """Encodes query text into a vector and finds the most similar assets via Cosine Similarity."""
     print(f"\n[SEARCH] Searching for query: '{query_text}'...")
-    
+
     query_vector = model.encode(query_text, normalize_embeddings=True)
-    
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT asset_id, original_name, byte_offset, payload_size, embedding FROM assets WHERE embedding IS NOT NULL")
     rows = cursor.fetchall()
-    
+
     results = []
     for row in rows:
         asset_id, name, offset, size, emb_blob = row
         stored_vector = np.frombuffer(emb_blob, dtype=np.float32)
-        
+
         # Calculate Cosine Similarity (since vectors are normalized, dot product = cosine similarity)
         similarity = np.dot(query_vector, stored_vector)
         results.append((similarity, asset_id, name, offset, size))
-        
+
     # Sort by highest similarity score
     results.sort(key=lambda x: x[0], reverse=True)
-    
+
     print(f"\nTop {top_k} Results:")
     print("-" * 65)
     for score, asset_id, name, offset, size in results[:top_k]:
         print(f"Score: {score:.4f} | ID: {asset_id} | File: {name} | Offset: {offset}")
     print("-" * 65)
-    
+
     conn.close()
     return results[:top_k]
 
@@ -133,11 +132,11 @@ def search_by_text(query_text, db_path=DB_NAME, top_k=5):
 if __name__ == "__main__":
     # Initialize Database Schema
     init_db()
-    
+
     # Example usage placeholder (Point to your actual manifest.csv and assets folder)
     # manifest_path = "manifest.csv"
     # assets_dir = "./raw_assets"
     # index_dataset(manifest_path, assets_dir)
-    
+
     # Example search test
     # search_by_text("a photo of a cat")
