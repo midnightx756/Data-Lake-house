@@ -1,1 +1,0 @@
-Document #3: Gamma version zero-copy latency benchmark.

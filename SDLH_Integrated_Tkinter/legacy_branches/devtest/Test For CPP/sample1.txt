@@ -1,1 +1,0 @@
-Hello, this is asset #1 stored inside our Semantic Data Lake!
