@@ -1,0 +1,3 @@
+asset_id,original_name,content_hash,byte_offset,payload_size,is_duplicate
+1,docA.txt,15386951701218030992,0,10,0
+2,docB.txt,15386012718287728023,74,10,0
