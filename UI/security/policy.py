@@ -1,3 +1,0 @@
-MAX_QUERY_ROWS=500
-MAX_SCAN_FILES_DEFAULT=None
-ALLOWED_QUERY_PREFIXES=("select","pragma","explain")

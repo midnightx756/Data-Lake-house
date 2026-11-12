@@ -1,1 +1,0 @@
-Semantic data lakehouse stores metadata separately from raw file payloads. Deduplication uses SHA-256 hashes.
