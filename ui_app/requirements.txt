@@ -1,0 +1,9 @@
+# Core desktop app uses Python standard library only.
+# Optional: pillow for image dimensions; pypdf for PDF text extraction;
+# sentence-transformers for local semantic embeddings (large download).
+Pillow>=10.0
+pypdf>=4.0
+
+# Optional CLIP semantic search (large model download):
+# sentence-transformers>=3.0
+# numpy>=1.24
