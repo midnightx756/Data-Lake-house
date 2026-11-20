@@ -1,4 +1,8 @@
 .vscode/
 .obsidian/
+ui_app/data/
+ui_app/logs/
 bin/
-
+lib/
+__pycache__/
+*.pyc
