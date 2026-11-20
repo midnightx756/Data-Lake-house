@@ -32,12 +32,14 @@ static bool read_file(const std::string& path, std::vector<char>& bytes) {
 }
 
 int main(int argc, char** argv) {
+    //cout << "Allahu Akbar\n"
     if (argc < 2) {
         std::cerr << "Usage: sdlh_blob pack <blob> <manifest.csv> <file...> | inspect <blob> | extract <blob> <offset> <output>\n";
         return 2;
     }
     const std::string cmd=argv[1];
     if (cmd=="pack") {
+        cout << "Doing Extraction\n";
         if (argc < 5) { std::cerr << "pack requires blob, manifest, and at least one file\n"; return 2; }
         const std::string blob_path=argv[2], manifest_path=argv[3];
         std::ofstream blob(blob_path,std::ios::binary|std::ios::trunc);

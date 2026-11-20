@@ -80,7 +80,7 @@ std::vector<IndexRecord> pack_files_with_index(const std::vector<std::string>& f
 // ============================================================================
 // Step 2: Instant Random-Access Extraction using mmap()
 // ============================================================================
-void extract_asset_mmap(const std::string& blob_path, uint64_t byte_offset) {
+void extract_asset_mmap(const std::string& blob_path, uint64_t byte_offset, const std::string& output_path) {
     std::cout << "\n[MMAP] Attempting direct jump to byte offset: " << byte_offset << "..." << std::endl;
 
     // TODO 3: Open the blob file using low-level POSIX open()
@@ -101,7 +101,13 @@ void extract_asset_mmap(const std::string& blob_path, uint64_t byte_offset) {
         close(fd);
         return;
     }
-    size_t file_size = sb.st_size;
+    size_t file_size = static_cast<size_t>(sb.st_size);
+
+    if (byte_offset + sizeof(AssetHeader) > file_size) {
+        std::cerr << "Offset out of bounds\n";
+        close(fd);
+        return;
+    }
 
     // TODO 5: Call mmap() to map the file into virtual address space!
     // Parameters needed for mmap:
@@ -131,17 +137,36 @@ void extract_asset_mmap(const std::string& blob_path, uint64_t byte_offset) {
    const AssetHeader* header = reinterpret_cast<const AssetHeader*>(target_ptr);
     if(!header -> is_valid()){
         std::cout << "invalid header\n";
-        close(fd);
         munmap(mapped_data, file_size);
+        close(fd);
+        return;
+    }
+
+    if (byte_offset + sizeof(AssetHeader) + header->payload_size > file_size) {
+        std::cerr << "Payload out of bounds\n";
+        munmap(mapped_data, file_size);
+        close(fd);
         return;
     }
 
     // TODO 9: Point directly to the payload bytes (which start right after the 64-byte header).
     // Read the string content and print it to the screen!
     const char* payload = target_ptr + sizeof(AssetHeader);
-    std::string s(payload, header -> payload_size);
-    std::cout << "ID: "  << header -> asset_id << "\n"<<"File Data: " << s << "\n";
 
+    if (!output_path.empty()) {
+        std::ofstream out(output_path, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            std::cerr << "Failed to write output file: " << output_path << "\n";
+        } else {
+            out.write(payload, static_cast<std::streamsize>(header->payload_size));
+            std::cout << "[MMAP] ID: " << header->asset_id
+            << " | Extracted " << header->payload_size
+            << " bytes -> " << output_path << "\n";
+        }
+    }else{
+        std::string s(payload, header -> payload_size);
+        std::cout << "ID: "  << header -> asset_id << "\n"<<"File Data: " << s << "\n";
+    }
     // TODO 10: Clean up resources.
     // - Unmap the memory using munmap(mapped_data, file_size);
     // - Close the file descriptor using close(fd);

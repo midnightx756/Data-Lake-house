@@ -6,9 +6,9 @@
 // Forward declarations matching functions in our modules
 void pack_with_deduplication(const std::vector<std::string>& file_paths,
                              const std::string& blob_output_path,
-                             const std::string& manifest_output_path);
+                             const std::string& manifest_output_path = "");
 
-void extract_asset_mmap(const std::string& blob_path, uint64_t byte_offset);
+void extract_asset_mmap(const std::string& blob_path, uint64_t byte_offset, const std::string& output_path);
 
 bool update_asset_payload(const std::string& blob_path,
                           uint64_t target_offset,
@@ -51,12 +51,13 @@ int main(int argc, char* argv[]) {
 
     } else if (command == "extract") {
         if (argc < 4) {
-            std::cerr << "[ERROR] extract requires: <blob_path> <byte_offset>\n";
+            std::cerr << "[ERROR] extract requires: <blob_path> <byte_offset> [output_file]\n";
             return 1;
         }
         std::string blob_path = argv[2];
         uint64_t offset = std::stoull(argv[3]);
-        extract_asset_mmap(blob_path, offset);
+        std::string output_path = (argc >= 5) ? argv[4] : "";
+        extract_asset_mmap(blob_path, offset, output_path);
 
     } else if (command == "update") {
         if (argc < 5) {
