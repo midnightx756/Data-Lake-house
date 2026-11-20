@@ -3,30 +3,31 @@ from tkinter import ttk, filedialog, messagebox
 from pathlib import Path
 from ui.widgets import heading
 from ui.theme import PANEL
+from ui.asset_viewer import open_blob_asset_viewer
 from database.connection import get_connection
-from core.cpp_blob_bridge import pack_to_blob, extract_from_blob
+from core.cpp_blob_bridge import pack_to_blob
 
 
 class StorageFrame(ttk.Frame):
     def __init__(self, parent, app):
         super().__init__(parent)
         self.app = app
-        heading(self, "C++ Blob Storage", "Pack selected files into a binary blob and import offsets into SQLite.")
+        heading(self, "C++ Blob Storage", "Inspect packed .blob records or extract any asset via mmap().")
         ttk.Label(
             self,
-            text="This creates a new blob; it does not move or delete original files.",
+            text="Folders scanned in Ingestion are packed here automatically. Double-click any row to view via mmap().",
             style="Subtitle.TLabel",
         ).pack(anchor="w", pady=(0, 12))
 
         row = ttk.Frame(self)
         row.pack(fill="x", pady=5)
-        ttk.Button(row, text="Select files and pack", style="Accent.TButton", command=self.pack_files).pack(side="left")
-        ttk.Button(row, text="Extract selected (mmap)", command=self.extract_selected).pack(side="left", padx=8)
+        ttk.Button(row, text="Extract & View (mmap)", style="Accent.TButton", command=self.extract_selected).pack(side="left")
+        ttk.Button(row, text="Pack extra files manually", command=self.pack_files).pack(side="left", padx=8)
         ttk.Button(row, text="Refresh manifest records", command=self.refresh).pack(side="left")
 
         self.output = tk.Text(
-            self, height=9, bg=PANEL, fg="#eef3fb", insertbackground="#eef3fb",
-            relief="flat", wrap="word", font=("Consolas", 9)
+            self, height=8, bg=PANEL, fg="#eef3fb", insertbackground="#eef3fb",
+            relief="flat", wrap="word", font=("Consolas", 9),
         )
         self.output.pack(fill="x", pady=10)
 
@@ -47,6 +48,7 @@ class StorageFrame(ttk.Frame):
             self.table.heading(col, text=title)
             self.table.column(col, width=width, anchor="w")
         self.table.pack(fill="both", expand=True, pady=6)
+        self.table.bind("<Double-1>", lambda _e: self.extract_selected())
         self.refresh()
 
     def pack_files(self):
@@ -70,7 +72,7 @@ class StorageFrame(ttk.Frame):
                 result["stdout"] + f'\nManifest rows imported to SQLite: {result["manifest_rows"]}\nManifest: {manifest}',
             )
             self.refresh()
-            messagebox.showinfo("Blob pack complete", "Files packed. Originals were not changed.")
+            messagebox.showinfo("Blob pack complete", "Files packed via bin/sdlh.")
         except Exception as e:
             messagebox.showerror("C++ blob integration", str(e))
 
@@ -80,19 +82,7 @@ class StorageFrame(ttk.Frame):
             messagebox.showinfo("Extract", "Click a row in the table first.")
             return
         source_path, blob_path, byte_offset, *_ = self.table.item(selected[0], "values")
-        out_path = filedialog.asksaveasfilename(
-            title="Save extracted file",
-            initialfile="extracted_" + Path(source_path).name,
-        )
-        if not out_path:
-            return
-        try:
-            stdout = extract_from_blob(blob_path, byte_offset, out_path)
-            self.output.delete("1.0", "end")
-            self.output.insert("end", stdout)
-            messagebox.showinfo("Extract complete", f"Extracted to:\n{out_path}")
-        except Exception as e:
-            messagebox.showerror("Extract failed", str(e))
+        open_blob_asset_viewer(self, Path(source_path).name, source_path, blob_path, byte_offset)
 
     def refresh(self):
         self.table.delete(*self.table.get_children())

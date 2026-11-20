@@ -1,7 +1,8 @@
-"""Wrapper that builds and calls the C++ core_cpp engine via Makefile."""
+"""Wrapper that builds and calls the C++ core_cpp binary (bin/sdlh) via Makefile."""
 import csv
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from database.connection import get_connection
 from config import BASE_DIR
@@ -11,6 +12,8 @@ BINARY = REPO_ROOT / "bin" / "sdlh"
 
 
 def compile_engine():
+    if BINARY.is_file():
+        return str(BINARY)
     if not shutil.which("g++") or not shutil.which("make"):
         raise RuntimeError("Install g++ and make inside WSL / Fedora.")
     result = subprocess.run(
@@ -83,14 +86,48 @@ def pack_to_blob(file_paths, blob_path, manifest_path):
     }
 
 
-def extract_from_blob(blob_path, offset, output_path):
+def extract_asset_bytes(blob_path, offset):
+    """Run C++ mmap extraction silently and return (raw_bytes, log_text)."""
     binary = compile_engine()
+    resolved_blob = str(Path(blob_path).resolve())
+    if not Path(resolved_blob).is_file():
+        raise FileNotFoundError(f"Blob file not found: {resolved_blob}")
+
+    with tempfile.NamedTemporaryFile(delete=False) as tf:
+        tmp_path = Path(tf.name)
+    tmp_path.unlink(missing_ok=True)
+
     result = subprocess.run(
-        [binary, "extract", str(Path(blob_path).resolve()), str(int(offset)), str(Path(output_path).resolve())],
+        [binary, "extract", resolved_blob, str(int(offset)), str(tmp_path)],
         capture_output=True,
-        text=True,
         timeout=120,
     )
-    if result.returncode:
-        raise RuntimeError((result.stderr or result.stdout)[-3000:])
-    return result.stdout
+    stdout_bytes = result.stdout or b""
+    stderr_text = (result.stderr or b"").decode("utf-8", errors="replace").strip()
+
+    if result.returncode != 0:
+        tmp_path.unlink(missing_ok=True)
+        raise RuntimeError(stderr_text or stdout_bytes.decode("utf-8", errors="replace"))
+
+    if tmp_path.is_file():
+        data = tmp_path.read_bytes()
+        tmp_path.unlink(missing_ok=True)
+        return data, stdout_bytes.decode("utf-8", errors="replace")
+
+    # Fallback for unedited 2-arg mmap_extractor.cpp (writes "File Data: <bytes>\n" to stdout)
+    marker = b"File Data: "
+    idx = stdout_bytes.find(marker)
+    if idx != -1:
+        payload = stdout_bytes[idx + len(marker):]
+        if payload.endswith(b"\n"):
+            payload = payload[:-1]
+        log_text = stdout_bytes[:idx].decode("utf-8", errors="replace").strip()
+        return payload, log_text
+
+    raise RuntimeError(stderr_text or "C++ mmap extractor failed to return payload.")
+
+
+def extract_from_blob(blob_path, offset, output_path):
+    data, log_text = extract_asset_bytes(blob_path, offset)
+    Path(output_path).write_bytes(data)
+    return log_text
