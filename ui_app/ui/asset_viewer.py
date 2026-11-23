@@ -14,7 +14,6 @@ TEXT_EXTS = {
 
 
 def open_blob_asset_viewer(parent, name, source_path, blob_path, byte_offset):
-    print("Allah\n")
     try:
         raw_bytes, cpp_log = extract_asset_bytes(blob_path, byte_offset)
     except Exception as exc:
